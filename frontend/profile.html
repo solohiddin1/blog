@@ -8,8 +8,12 @@
 </head>
 <body>
     <nav>
-        <a href="index.html">Home</a>
-        <button id="logoutButton" style="display: none;">Logout</button>
+        <div class="nav-left"><span class="brand"><a href="index.html" style="color:inherit; text-decoration:none">Blog</a></span></div>
+        <div class="nav-right">
+            <a href="login.html" id="loginLink">Login</a>
+            <a href="register.html" id="registerLink">Register</a>
+            <button id="logoutButton" style="display: none;">Logout</button>
+        </div>
     </nav>
     <h1>Profile</h1>
     <div id="userInfo"></div>

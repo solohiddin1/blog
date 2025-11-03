@@ -7,13 +7,15 @@ async function loadPost(postId) {
             container.innerText = 'Post not found or you do not have access.';
             return;
         }
-        const post = await response.json();
+    const post = await response.json();
 
-        document.getElementById('postTitle').innerText = post.title;
-        container.innerText = post.content;
+    document.getElementById('postTitle').innerText = post.title;
+    // include author link
+    const authorName = post.author_username || post.author || 'Unknown';
+    container.innerHTML = `<p class="meta">By <a class="author-link" href="profile.html?user_id=${post.author}">${escapeHtml(authorName)}</a> • ${post.created_at || ''}</p><div>${escapeHtml(post.content)}</div>`;
 
-        // Load comments
-        await loadComments(postId);
+    // Load comments
+    await loadComments(postId);
     } catch (err) {
         container.innerText = 'Error loading post.';
         console.error(err);
@@ -36,7 +38,14 @@ async function loadComments(postId) {
         comments.results.forEach(comment => {
             const commentElement = document.createElement('div');
             commentElement.className = 'comment-item';
-            commentElement.innerHTML = `<h3>${escapeHtml(comment.title)}</h3><p>${escapeHtml(comment.content)}</p><p class="meta">Author: ${comment.author}</p>`;
+            const authorName = comment.author_username || comment.author || 'Unknown';
+            commentElement.innerHTML = `
+                <div class="comment-avatar"></div>
+                <div class="comment-body">
+                  <div><a class="comment-author" href="profile.html?user_id=${comment.author}">${escapeHtml(authorName)}</a> <span class="meta">• ${comment.created_at || ''}</span></div>
+                  <div class="comment-text">${escapeHtml(comment.content)}</div>
+                </div>
+            `;
             commentList.appendChild(commentElement);
         });
     } catch (err) {

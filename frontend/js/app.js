@@ -115,6 +115,8 @@ async function updateNav() {
     const token = getToken();
     const profileLink = document.getElementById('profileLink');
     const logoutButton = document.getElementById('logoutButton');
+    const loginLink = document.getElementById('loginLink');
+    const registerLink = document.getElementById('registerLink');
     if (token) {
         // try to get username
         const user = await getCurrentUser();
@@ -127,9 +129,13 @@ async function updateNav() {
             logoutButton.style.display = 'inline';
             logoutButton.onclick = logout;
         }
+        if (loginLink) loginLink.style.display = 'none';
+        if (registerLink) registerLink.style.display = 'none';
     } else {
         if (profileLink) profileLink.style.display = 'none';
         if (logoutButton) logoutButton.style.display = 'none';
+        if (loginLink) loginLink.style.display = 'inline';
+        if (registerLink) registerLink.style.display = 'inline';
     }
 }
 
@@ -152,6 +158,7 @@ function showMessage(containerId, message, type = 'error') {
 
 // small helper to escape HTML (safe for inserting text)
 function escapeHtml(str) {
-    if (!str) return '';
-    return String(str).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;');
+    if (str === null || str === undefined) return '';
+    const s = String(str);
+    return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }

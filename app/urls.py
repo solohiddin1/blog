@@ -3,7 +3,7 @@ from .views.comment import CommentView, CommentDetailView
 from .views.post import PostView, PostDetailView
 from .views.auth import RegisterView, LoginView
 from rest_framework_simplejwt.views import TokenRefreshView
-from .views.user import UserProfileView
+from .views.user import UserProfileView, OtherUserProfileView
 from .views.front import home_view, login_view, register_view, profile_view, post_view
 # from rest_framework_simplejwt.tokens import ac
 
@@ -25,6 +25,7 @@ urlpatterns = [
     path('register/', RegisterView.as_view(), name='user-register'),
     path('login/', LoginView.as_view(), name='user-login'),
     path('profile/', UserProfileView.as_view(), name='user-profile'),
+    path('users/<int:pk>/', OtherUserProfileView.as_view(), name='user-detail'),
 
     path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh')
 
