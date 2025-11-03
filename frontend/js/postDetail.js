@@ -1,3 +1,5 @@
+let socket;
+
 async function loadPost(postId) {
     const container = document.getElementById('postContent');
     try {
@@ -7,15 +9,16 @@ async function loadPost(postId) {
             container.innerText = 'Post not found or you do not have access.';
             return;
         }
-    const post = await response.json();
+        const post = await response.json();
 
-    document.getElementById('postTitle').innerText = post.title;
-    // include author link
-    const authorName = post.author_username || post.author || 'Unknown';
-    container.innerHTML = `<p class="meta">By <a class="author-link" href="profile.html?user_id=${post.author}">${escapeHtml(authorName)}</a> • ${post.created_at || ''}</p><div>${escapeHtml(post.content)}</div>`;
+        document.getElementById('postTitle').innerText = post.title;
+        const authorName = post.author_username || post.author || 'Unknown';
+        container.innerHTML = `<p class="meta">By <a class="author-link" href="profile.html?user_id=${post.author}">${escapeHtml(authorName)}</a> • ${post.created_at || ''}</p><div>${escapeHtml(post.content)}</div>`;
 
-    // Load comments
-    await loadComments(postId);
+        // Load comments
+        await loadComments(postId);
+        // Establish WebSocket connection
+        connectWebSocket(postId);
     } catch (err) {
         container.innerText = 'Error loading post.';
         console.error(err);
@@ -32,7 +35,6 @@ async function loadComments(postId) {
             return;
         }
         const comments = await response.json();
-
         commentList.innerHTML = '';
 
         comments.results.forEach(comment => {
@@ -42,8 +44,8 @@ async function loadComments(postId) {
             commentElement.innerHTML = `
                 <div class="comment-avatar"></div>
                 <div class="comment-body">
-                  <div><a class="comment-author" href="profile.html?user_id=${comment.author}">${escapeHtml(authorName)}</a> <span class="meta">• ${comment.created_at || ''}</span></div>
-                  <div class="comment-text">${escapeHtml(comment.content)}</div>
+                    <div><a class="comment-author" href="profile.html?user_id=${comment.author}">${escapeHtml(authorName)}</a> <span class="meta">• ${comment.created_at || ''}</span></div>
+                    <div class="comment-text">${escapeHtml(comment.content)}</div>
                 </div>
             `;
             commentList.appendChild(commentElement);
@@ -54,13 +56,35 @@ async function loadComments(postId) {
     }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const postId = urlParams.get('id');
-    if (postId) loadPost(postId);
-});
+function connectWebSocket(postId) {
+    socket = new WebSocket(`ws://${window.location.host}/ws/comments/${postId}/`);
 
-// handle comment form submission
+    socket.onmessage = function(e) {
+        const data = JSON.parse(e.data);
+        addCommentToList(data);
+    };
+
+    socket.onclose = function() {
+        console.error('WebSocket closed unexpectedly');
+    };
+}
+
+function addCommentToList(comment) {
+    const commentList = document.getElementById('commentList');
+    const commentElement = document.createElement('div');
+    commentElement.className = 'comment-item';
+
+    const authorName = comment.author_username || 'Unknown';
+    commentElement.innerHTML = `
+        <div class="comment-avatar"></div>
+        <div class="comment-body">
+            <div><a class="comment-author" href="profile.html?user_id=${comment.author}">${escapeHtml(authorName)}</a> <span class="meta">• ${comment.created_at || ''}</span></div>
+            <div class="comment-text">${escapeHtml(comment.content)}</div>
+        </div>
+    `;
+    commentList.appendChild(commentElement);
+}
+
 document.getElementById('commentForm')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     const urlParams = new URLSearchParams(window.location.search);
@@ -75,16 +99,189 @@ document.getElementById('commentForm')?.addEventListener('submit', async (e) => 
             body: JSON.stringify({ post: postId, content })
         });
         if (!response.ok) {
-            const err = await response.json().catch(()=>({}));
+            const err = await response.json().catch(() => ({}));
             showMessage('commentFormMessage', err.detail || 'Failed to post comment', 'error');
             return;
         }
         const data = await response.json();
         showMessage('commentFormMessage', 'Comment created', 'success');
         document.getElementById('commentForm').reset();
-        await loadComments(postId);
+        
+        // Optionally load comments again or add directly via WebSocket
+        // await loadComments(postId);
     } catch (err) {
         console.error(err);
         showMessage('commentFormMessage', 'Error submitting comment', 'error');
     }
 });
+
+document.addEventListener('DOMContentLoaded', () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const postId = urlParams.get('id');
+    if (postId) loadPost(postId);
+});
+
+// let socket;
+
+// async function loadPost(postId) {
+//     const response = await authFetch(`/posts/${postId}/`);
+//     const post = await response.json();
+
+//     document.getElementById('postTitle').innerText = post.title;
+//     document.getElementById('postContent').innerText = post.content;
+
+//     // Load existing comments
+//     await loadComments(postId);
+
+//     // Establish WebSocket connection
+//     connectWebSocket(postId);
+// }
+
+// async function loadComments(postId) {
+//     const response = await authFetch(`/comments/?post=${postId}`);
+//     const comments = await response.json();
+
+//     const commentList = document.getElementById('commentList');
+//     commentList.innerHTML = '';
+
+//     comments.results.forEach(comment => {
+//         const commentElement = document.createElement('div');
+//         commentElement.innerHTML = `<h3>${comment.title}</h3><p>${comment.content}</p>`;
+//         commentList.appendChild(commentElement);
+//     });
+// }
+
+// function connectWebSocket(postId) {
+//     socket = new WebSocket(`ws://${window.location.host}/ws/comments/${postId}/`);
+
+//     socket.onmessage = function(e) {
+//         const data = JSON.parse(e.data);
+//         addCommentToList(data);
+//     };
+
+//     socket.onclose = function() {
+//         console.error('WebSocket closed unexpectedly');
+//     };
+// }
+
+// function addCommentToList(comment) {
+//     const commentList = document.getElementById('commentList');
+//     const commentElement = document.createElement('div');
+//     commentElement.innerHTML = `<h3>${comment.title}</h3><p>${comment.content}</p>`;
+//     commentList.appendChild(commentElement);
+// }
+
+// document.getElementById('commentForm').addEventListener('submit', function(e) {
+//     e.preventDefault();
+//     const title = document.getElementById('commentTitle').value;
+//     const content = document.getElementById('commentContent').value;
+
+//     const commentData = {
+//         title: title,
+//         content: content,
+//         author: getToken() // Pass the author's username or ID if needed
+//     };
+
+//     socket.send(JSON.stringify(commentData));
+
+//     // Clear the form
+//     document.getElementById('commentTitle').value = '';
+//     document.getElementById('commentContent').value = '';
+// });
+
+// document.addEventListener('DOMContentLoaded', () => {
+//     const urlParams = new URLSearchParams(window.location.search);
+//     const postId = urlParams.get('id');
+//     if (postId) loadPost(postId);
+// });
+
+// async function loadPost(postId) {
+//     const container = document.getElementById('postContent');
+//     try {
+//         container.innerText = 'Loading...';
+//         const response = await authFetch(`/posts/${postId}/`);
+//         if (!response.ok) {
+//             container.innerText = 'Post not found or you do not have access.';
+//             return;
+//         }
+//     const post = await response.json();
+
+//     document.getElementById('postTitle').innerText = post.title;
+//     // include author link
+//     const authorName = post.author_username || post.author || 'Unknown';
+//     container.innerHTML = `<p class="meta">By <a class="author-link" href="profile.html?user_id=${post.author}">${escapeHtml(authorName)}</a> • ${post.created_at || ''}</p><div>${escapeHtml(post.content)}</div>`;
+
+//     // Load comments
+//     await loadComments(postId);
+//     } catch (err) {
+//         container.innerText = 'Error loading post.';
+//         console.error(err);
+//     }
+// }
+
+// async function loadComments(postId) {
+//     const commentList = document.getElementById('commentList');
+//     try {
+//         commentList.innerHTML = '<p>Loading comments...</p>';
+//         const response = await authFetch(`/comments/?post=${postId}`);
+//         if (!response.ok) {
+//             commentList.innerHTML = '<p>No comments or not authorized.</p>';
+//             return;
+//         }
+//         const comments = await response.json();
+
+//         commentList.innerHTML = '';
+
+//         comments.results.forEach(comment => {
+//             const commentElement = document.createElement('div');
+//             commentElement.className = 'comment-item';
+//             const authorName = comment.author_username || comment.author || 'Unknown';
+//             commentElement.innerHTML = `
+//                 <div class="comment-avatar"></div>
+//                 <div class="comment-body">
+//                   <div><a class="comment-author" href="profile.html?user_id=${comment.author}">${escapeHtml(authorName)}</a> <span class="meta">• ${comment.created_at || ''}</span></div>
+//                   <div class="comment-text">${escapeHtml(comment.content)}</div>
+//                 </div>
+//             `;
+//             commentList.appendChild(commentElement);
+//         });
+//     } catch (err) {
+//         commentList.innerHTML = '<p>Error loading comments.</p>';
+//         console.error(err);
+//     }
+// }
+
+// document.addEventListener('DOMContentLoaded', () => {
+//     const urlParams = new URLSearchParams(window.location.search);
+//     const postId = urlParams.get('id');
+//     if (postId) loadPost(postId);
+// });
+
+// // handle comment form submission
+// document.getElementById('commentForm')?.addEventListener('submit', async (e) => {
+//     e.preventDefault();
+//     const urlParams = new URLSearchParams(window.location.search);
+//     const postId = urlParams.get('id');
+//     if (!postId) return;
+
+//     const content = document.getElementById('commentContent').value;
+
+//     try {
+//         const response = await authFetch('/comments/', {
+//             method: 'POST',
+//             body: JSON.stringify({ post: postId, content })
+//         });
+//         if (!response.ok) {
+//             const err = await response.json().catch(()=>({}));
+//             showMessage('commentFormMessage', err.detail || 'Failed to post comment', 'error');
+//             return;
+//         }
+//         const data = await response.json();
+//         showMessage('commentFormMessage', 'Comment created', 'success');
+//         document.getElementById('commentForm').reset();
+//         await loadComments(postId);
+//     } catch (err) {
+//         console.error(err);
+//         showMessage('commentFormMessage', 'Error submitting comment', 'error');
+//     }
+// });
