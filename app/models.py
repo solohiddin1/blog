@@ -33,7 +33,6 @@ class Post(BaseModel):
 
 class Comment(BaseModel):
     post = models.ForeignKey(Post,related_name='post_comments',on_delete=models.CASCADE)
-    title = models.CharField(max_length=255)
     content = models.TextField()
     author = models.ForeignKey(User, on_delete=models.CASCADE, related_name='comments')
 

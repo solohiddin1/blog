@@ -67,13 +67,12 @@ document.getElementById('commentForm')?.addEventListener('submit', async (e) => 
     const postId = urlParams.get('id');
     if (!postId) return;
 
-    const title = document.getElementById('commentTitle').value;
     const content = document.getElementById('commentContent').value;
 
     try {
         const response = await authFetch('/comments/', {
             method: 'POST',
-            body: JSON.stringify({ post: postId, title, content })
+            body: JSON.stringify({ post: postId, content })
         });
         if (!response.ok) {
             const err = await response.json().catch(()=>({}));

@@ -20,9 +20,12 @@ class PostView(APIView):
         return paginator.get_paginated_response(serializer.data)
 
     def post(self, request):
-        serializer = PostSerializer(data=request.data)
+        author = request.user.id
+        data = request.data.copy()
+        data['author'] = author
+        serializer = PostSerializer(data=data)
         if serializer.is_valid():
-            serializer.save(author=request.user)
+            serializer.save()
             return Response({"message": "Post created", "post": serializer.data}, status=201)
         return Response(serializer.errors, status=400)
     
