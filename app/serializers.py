@@ -7,12 +7,13 @@ class CommentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Comment
         fields = ['post', 'title', 'content','author']
-
+        read_only_fields = ['created_at']
 
 class PostSerializer(serializers.ModelSerializer):
     class Meta:
         model = Post
-        fields = ['title', 'content', 'author',]
+        fields = ['id', 'title', 'content', 'author','tag']
+        read_only_fields = ['created_at']
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -36,9 +37,6 @@ class UserSerializer(serializers.ModelSerializer):
         if User.objects.filter(username=value):
             raise serializers.ValidationError("this username is taken")
 
-        if not re.match(r'^[\w\.-]+@[\w\.-]+\.\w+$', value):
-            raise serializers.ValidationError("invalid email")
-
         if len(value) < 4:
             raise serializers.ValidationError("Username must be at least 4 characters long.")
         return value
@@ -46,6 +44,9 @@ class UserSerializer(serializers.ModelSerializer):
     def validate_email(self, value):
         if User.objects.filter(email=value).exists():
             raise serializers.ValidationError("This email is taken")
+        
+        if not re.match(r'^[\w\.-]+@[\w\.-]+\.\w+$', value):
+            raise serializers.ValidationError("invalid email")
         return value
 
     def validate_password(self, value):

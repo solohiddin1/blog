@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="css/styles.css">
+    <title>Create/Edit Post</title>
+</head>
+<body>
+    <nav>
+        <a href="login.html">Home</a>
+        <button id="logoutButton" style="display: none;">Logout</button>
+    </nav>
+    <h1>Create/Edit Post</h1>
+    <form id="postForm">
+        <input type="text" id="postTitle" placeholder="Post Title" required>
+        <textarea id="postContent" placeholder="Post Content" required></textarea>
+        <button type="submit">Save Post</button>
+    </form>
+    <script src="js/app.js"></script>
+    <script src="js/posts.js"></script>
+</body>
+</html>

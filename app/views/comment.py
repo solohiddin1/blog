@@ -1,4 +1,4 @@
-from rest_framework.decorators import APIView
+from rest_framework.views import APIView
 from ..models import Post, Comment
 from rest_framework.response import Response
 from ..serializers import CommentSerializer
@@ -13,12 +13,20 @@ class CommentView(APIView):
 
     def get(self,request):
         paginator = self.pagination_class()
-        result = paginator.paginate_queryset(Comment.objects.all(),request)
+        # allow filtering comments by post id via query param `post`
+        post_id = request.GET.get('post')
+        queryset = Comment.objects.all()
+        if post_id:
+            queryset = queryset.filter(post_id=post_id)
+        result = paginator.paginate_queryset(queryset, request)
         serializer = CommentSerializer(result, many=True)
         return paginator.get_paginated_response(serializer.data)
 
     def post(self, request):
-        serializer = CommentSerializer(data=request.data)
+        data = request.data.copy()
+        data['author'] = request.user.id
+        print(data)
+        serializer = CommentSerializer(data=data)
         if serializer.is_valid():
             serializer.save(author=request.user)
             return Response({"message": "Comment created", "comment": serializer.data}, status=201)

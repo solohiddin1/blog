@@ -1,5 +1,5 @@
 from django.shortcuts import render
-from rest_framework.decorators import APIView
+from rest_framework.views import APIView
 from ..models import Post, Comment
 from rest_framework.response import Response
 from ..serializers import CommentSerializer, PostSerializer, UserSerializer
@@ -29,6 +29,15 @@ class PostView(APIView):
 
 class PostDetailView(APIView):
     permission_classes = [IsAuthenticated]
+
+    def get(self, request, pk):
+        try:
+            post = Post.objects.get(pk=pk)
+        except Post.DoesNotExist:
+            return Response({"error": "post does not exist"}, status=404)
+
+        serializer = PostSerializer(post)
+        return Response(serializer.data)
 
     def put(self,request,pk):
         try:
