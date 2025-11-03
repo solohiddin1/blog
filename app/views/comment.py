@@ -13,7 +13,8 @@ class CommentView(APIView):
 
     def get(self,request):
         paginator = self.pagination_class()
-        # allow filtering comments by post id via query param `post`
+
+        # post 
         post_id = request.GET.get('post')
         queryset = Comment.objects.all()
         if post_id:
