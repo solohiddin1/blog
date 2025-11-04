@@ -1,19 +1,33 @@
 from rest_framework import serializers
-from .models import Comment, Post
+from .models import Comment, Post, Tag
 from django.contrib.auth.models import User
 import re
 
+
+
+class TagSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Tag
+        fields = ['id', 'name']
+        read_only_fields = ['created_at','updated_at']
+
+
 class CommentSerializer(serializers.ModelSerializer):
+    author_username = serializers.CharField(source='author.username', read_only=True)
+
     class Meta:
         model = Comment
-        fields = ['post', 'content','author']
-        read_only_fields = ['created_at']
+        fields = ['id', 'post', 'content', 'author', 'author_username', 'created_at']
+        read_only_fields = ['created_at', 'author']
 
 class PostSerializer(serializers.ModelSerializer):
+    author_username = serializers.CharField(source='author.username', read_only=True)
+    tag = serializers.SlugRelatedField(many=True, slug_field='name', queryset=Tag.objects.all())
+
     class Meta:
         model = Post
-        fields = ['id', 'title', 'content', 'author','tag']
-        read_only_fields = ['created_at']
+        fields = ['id', 'title', 'content', 'author', 'author_username', 'tag', 'created_at']
+        read_only_fields = ['created_at', 'author']
 
 
 class UserSerializer(serializers.ModelSerializer):

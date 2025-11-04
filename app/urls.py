@@ -1,14 +1,15 @@
-from django.urls import path, include
+from django.urls import path
 from .views.comment import CommentView, CommentDetailView
-from .views.post import PostView, PostDetailView
+from .views.post import PostView, PostDetailView, PostsByTag
 from .views.auth import RegisterView, LoginView
 from rest_framework_simplejwt.views import TokenRefreshView
 from .views.user import UserProfileView, OtherUserProfileView
-from .views.front import home_view, login_view, register_view, profile_view, post_view
-# from rest_framework_simplejwt.tokens import ac
+from .views.front import home_view, login_view, register_view, profile_view, post_view, home
+from .views.tags import TagView
 
 
 urlpatterns = [
+    path("web/", home, name="web"),
     path('', home_view, name='home'),
     path('login-page/', login_view, name='login-page'),
     path('register-page/', register_view, name='register-page'),
@@ -21,7 +22,9 @@ urlpatterns = [
     
     path('posts/', PostView.as_view(), name='post-list'),
     path('posts/<int:pk>/', PostDetailView.as_view(), name='post-detail'),
+    path('posts_tag/<str:tag_name>/', PostsByTag.as_view(), name='post-tags'),
 
+    path('tags/',TagView.as_view(), name='tags'),
     path('register/', RegisterView.as_view(), name='user-register'),
     path('login/', LoginView.as_view(), name='user-login'),
     path('profile/', UserProfileView.as_view(), name='user-profile'),

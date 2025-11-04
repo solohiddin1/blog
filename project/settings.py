@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'app',
     'corsheaders',
     'rest_framework',
+    'channels',
 ]
 
 MIDDLEWARE = [
@@ -83,6 +84,7 @@ DATABASES = {
     }
 }
 
+ASGI_APPLICATION = "project.asgi.application"
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
@@ -118,6 +120,14 @@ CORS_ALLOW_ALL_ORIGINS = True
 
 # Allow credentials (cookies, Authorization header with credentials)
 CORS_ALLOW_CREDENTIALS = True
+
+# Channels (WebSocket) configuration - in-memory channel layer for development.
+# For production use Redis backend (channels_redis).
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels.layers.InMemoryChannelLayer",
+    },
+}
 
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/

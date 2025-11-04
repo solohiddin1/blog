@@ -57,24 +57,28 @@ async function loadProfile() {
         const userPosts = document.getElementById('userPosts');
         userPosts.innerHTML = '';
 
-        profile.posts.forEach(post => {
+                profile.posts.forEach(post => {
             const postElement = document.createElement('article');
             postElement.className = 'post-item';
             const authorName = profile.user.username || profile.user.id || 'Unknown';
             // if this is the current user's profile (no userId param), show delete button
             let deleteBtnHtml = '';
-            const currentUser = JSON.parse(localStorage.getItem('current_user') || 'null');
-            if (!userId && currentUser && currentUser.id === profile.user.id) {
-                deleteBtnHtml = `<button class="btn delete-post" data-id="${post.id}">Delete</button>`;
+                        const currentUser = JSON.parse(localStorage.getItem('current_user') || 'null');
+                        let editBtnHtml = '';
+                        if (!userId && currentUser && currentUser.id === profile.user.id) {
+                                deleteBtnHtml = `<button class="btn delete-post" data-id="${post.id}">Delete</button>`;
+                                editBtnHtml = `<button class="btn edit-post" data-id="${post.id}">Edit</button>`;
             }
             postElement.innerHTML = `
                 <a class="post-avatar-link" href="profile.html?user_id=${profile.user.id}"><div class="post-avatar">${escapeHtml((authorName[0]||'U').toUpperCase())}</div></a>
                 <div class="post-content">
                   <div class="post-header"><a class="author-link" href="profile.html?user_id=${profile.user.id}">${escapeHtml(authorName)}</a></div>
                   <div class="post-body"><a href="post.html?id=${post.id}">${escapeHtml(post.title)}</a></div>
-                  <div class="post-excerpt">${escapeHtml(post.content || '')}</div>
+                                    <div class="post-excerpt">${escapeHtml(post.content || '')}</div>
+                                    <div class="post-tags">${(post.tag || []).map(t => `<a class="tag-badge" href="#" data-tag="${escapeHtml(t)}">${escapeHtml(t)}</a>`).join(' ')}</div>
                 </div>
-                ${deleteBtnHtml}
+                                ${deleteBtnHtml}
+                                ${editBtnHtml}
             `;
             userPosts.appendChild(postElement);
         });
@@ -92,6 +96,25 @@ async function loadProfile() {
                     const body = await res.json().catch(()=>({}));
                     showMessage('profileMessage', body.error || 'Failed to delete', 'error');
                 }
+            });
+        });
+
+        // attach edit handlers
+        document.querySelectorAll('.edit-post').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const id = e.target.dataset.id;
+                // navigate to editor with id param
+                window.location.href = `editor.html?id=${id}`;
+            });
+        });
+
+        // attach tag handlers to filter
+        document.querySelectorAll('.tag-badge').forEach(b => {
+            b.addEventListener('click', (e) => {
+                e.preventDefault();
+                const t = e.target.dataset.tag;
+                if (!t) return;
+                window.location.href = `index.html?tag=${encodeURIComponent(t)}`;
             });
         });
     } catch (err) {

@@ -1,9 +1,15 @@
-async function loadPosts(page = 1) {
+async function loadPosts(page = 1, tag = null) {
     const postList = document.getElementById('postList');
     const pagination = document.getElementById('pagination');
     try {
         postList.innerHTML = '<p>Loading posts...</p>';
-        const response = await authFetch(`/posts/?page=${page}`);
+        let response;
+        if (tag) {
+            // fetch posts by tag
+            response = await authFetch(`/posts_tag/${encodeURIComponent(tag)}/`);
+        } else {
+            response = await authFetch(`/posts/?page=${page}`);
+        }
         if (!response.ok) {
             // log status for debugging
             console.error('Posts load failed', response.status, response.statusText);
@@ -31,7 +37,7 @@ async function loadPosts(page = 1) {
         }
         const data = await response.json();
         console.log('posts data:', data);
-        if (!data || !Array.isArray(data.results)) {
+        if (!data || (!(Array.isArray(data) || Array.isArray(data.results)))) {
             postList.innerHTML = `<pre>Unexpected response format:\n${escapeHtml(JSON.stringify(data, null, 2))}</pre>`;
             return;
         }
@@ -56,7 +62,8 @@ async function loadPosts(page = 1) {
             if (!actions.querySelector('.create-left')) actions.appendChild(createBtn);
         }
 
-        data.results.forEach(post => {
+        const results = data.results || data; // posts_tag returns array, posts returns paginated {results:[]}
+        results.forEach(post => {
             const postElement = document.createElement('article');
             const contentText = post.content || '';
             const excerpt = contentText.length > 200 ? contentText.slice(0,200) + '...' : contentText;
@@ -69,9 +76,20 @@ async function loadPosts(page = 1) {
                   <div class="post-header"><a class="author-link" href="profile.html?user_id=${post.author}">${escapeHtml(authorName)}</a> <span class="meta">• ${post.created_at || ''}</span></div>
                   <div class="post-body"><a href="post.html?id=${post.id}">${escapeHtml(post.title)}</a></div>
                   <div class="post-excerpt">${escapeHtml(excerpt)}</div>
+                  <div class="post-tags">${(post.tag || []).map(t => `<a class="tag-badge" href="#" data-tag="${escapeHtml(t)}">${escapeHtml(t)}</a>`).join(' ')}</div>
                 </div>
             `;
             postList.appendChild(postElement);
+        });
+
+        // attach tag badge handlers
+        document.querySelectorAll('.tag-badge').forEach(b => {
+            b.addEventListener('click', (e) => {
+                e.preventDefault();
+                const t = e.target.dataset.tag;
+                if (!t) return;
+                loadPosts(1, t);
+            });
         });
 
         pagination.innerHTML = '';
@@ -106,5 +124,42 @@ function escapeHtml(str) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    loadPosts();
+    const params = new URLSearchParams(window.location.search);
+    const tag = params.get('tag');
+    if (tag) loadPosts(1, tag);
+    else loadPosts();
+    loadTagsSidebar();
 });
+
+// load tags and render a small sidebar in the corner
+async function loadTagsSidebar() {
+    try {
+        const res = await authFetch('/tags/');
+        if (!res.ok) return;
+        const tags = await res.json();
+        const container = document.getElementById('tagsSidebar');
+        if (!container) {
+            const el = document.createElement('aside');
+            el.id = 'tagsSidebar';
+            el.className = 'tags-sidebar';
+            el.innerHTML = '<h4>Tags</h4><div class="tags-list"></div>';
+            document.body.appendChild(el);
+        }
+        const list = document.querySelector('#tagsSidebar .tags-list');
+        list.innerHTML = '';
+        (tags || []).forEach(t => {
+            const a = document.createElement('a');
+            a.href = '#';
+            a.className = 'tag-pill';
+            a.innerText = t.name || t;
+            a.dataset.tag = t.name || t;
+            a.addEventListener('click', (e) => {
+                e.preventDefault();
+                loadPosts(1, e.target.dataset.tag);
+            });
+            list.appendChild(a);
+        });
+    } catch (err) {
+        console.error('Failed to load tags', err);
+    }
+}

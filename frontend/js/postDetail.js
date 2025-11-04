@@ -11,14 +11,24 @@ async function loadPost(postId) {
         }
         const post = await response.json();
 
-        document.getElementById('postTitle').innerText = post.title;
-        const authorName = post.author_username || post.author || 'Unknown';
-        container.innerHTML = `<p class="meta">By <a class="author-link" href="profile.html?user_id=${post.author}">${escapeHtml(authorName)}</a> • ${post.created_at || ''}</p><div>${escapeHtml(post.content)}</div>`;
+    document.getElementById('postTitle').innerText = post.title;
+    const authorName = post.author_username || post.author || 'Unknown';
+    const tagsHtml = (post.tag || []).map(t => `<a class="tag-badge" href="#" data-tag="${escapeHtml(t)}">${escapeHtml(t)}</a>`).join(' ');
+    container.innerHTML = `<p class="meta">By <a class="author-link" href="profile.html?user_id=${post.author}">${escapeHtml(authorName)}</a> • ${post.created_at || ''}</p><div>${escapeHtml(post.content)}</div><div class="post-tags">${tagsHtml}</div>`;
 
         // Load comments
         await loadComments(postId);
         // Establish WebSocket connection
         connectWebSocket(postId);
+        // make tags clickable (navigate to main page with tag filter)
+        document.querySelectorAll('#postContent .tag-badge').forEach(b => {
+            b.addEventListener('click', (e) => {
+                e.preventDefault();
+                const t = e.target.dataset.tag;
+                if (!t) return;
+                window.location.href = `index.html?tag=${encodeURIComponent(t)}`;
+            });
+        });
     } catch (err) {
         container.innerText = 'Error loading post.';
         console.error(err);
@@ -41,14 +51,81 @@ async function loadComments(postId) {
             const commentElement = document.createElement('div');
             commentElement.className = 'comment-item';
             const authorName = comment.author_username || comment.author || 'Unknown';
+            // show edit/delete for own comments
+            const currentUser = JSON.parse(localStorage.getItem('current_user') || 'null');
+            let controls = '';
+            if (currentUser && currentUser.id === comment.author) {
+                controls = `<div class="comment-controls"><button class="edit-comment" data-id="${comment.id}">Edit</button> <button class="delete-comment" data-id="${comment.id}">Delete</button></div>`;
+            }
             commentElement.innerHTML = `
                 <div class="comment-avatar"></div>
                 <div class="comment-body">
                     <div><a class="comment-author" href="profile.html?user_id=${comment.author}">${escapeHtml(authorName)}</a> <span class="meta">• ${comment.created_at || ''}</span></div>
-                    <div class="comment-text">${escapeHtml(comment.content)}</div>
+                    <div class="comment-text" data-id="content-${comment.id}">${escapeHtml(comment.content)}</div>
+                    ${controls}
                 </div>
             `;
             commentList.appendChild(commentElement);
+        });
+
+        // attach comment controls
+        document.querySelectorAll('.delete-comment').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                const id = e.target.dataset.id;
+                if (!confirm('Delete this comment?')) return;
+                const res = await authFetch(`/comments/${id}/`, { method: 'DELETE' });
+                if (res.ok) {
+                    e.target.closest('.comment-item').remove();
+                } else {
+                    const body = await res.json().catch(()=>({}));
+                    showMessage('commentFormMessage', body.error || 'Failed to delete', 'error');
+                }
+            });
+        });
+
+        document.querySelectorAll('.edit-comment').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const id = e.target.dataset.id;
+                const contentEl = document.querySelector(`[data-id=content-${id}]`);
+                const current = contentEl.innerText || '';
+                // replace with textarea and save/cancel
+                const ta = document.createElement('textarea');
+                ta.value = current;
+                const save = document.createElement('button');
+                save.innerText = 'Save';
+                const cancel = document.createElement('button');
+                cancel.innerText = 'Cancel';
+                const wrapper = document.createElement('div');
+                wrapper.appendChild(ta);
+                wrapper.appendChild(save);
+                wrapper.appendChild(cancel);
+                contentEl.parentNode.replaceChild(wrapper, contentEl);
+
+                save.addEventListener('click', async () => {
+                    const newContent = ta.value;
+                    const res = await authFetch(`/comments/${id}/`, { method: 'PUT', body: JSON.stringify({ content: newContent }) });
+                    if (res.ok) {
+                        // restore
+                        const newDiv = document.createElement('div');
+                        newDiv.className = 'comment-text';
+                        newDiv.dataset.id = `content-${id}`;
+                        newDiv.innerText = newContent;
+                        wrapper.parentNode.replaceChild(newDiv, wrapper);
+                    } else {
+                        const body = await res.json().catch(()=>({}));
+                        showMessage('commentFormMessage', body.error || 'Failed to update', 'error');
+                    }
+                });
+
+                cancel.addEventListener('click', () => {
+                    // restore original
+                    const oldDiv = document.createElement('div');
+                    oldDiv.className = 'comment-text';
+                    oldDiv.dataset.id = `content-${id}`;
+                    oldDiv.innerText = current;
+                    wrapper.parentNode.replaceChild(oldDiv, wrapper);
+                });
+            });
         });
     } catch (err) {
         commentList.innerHTML = '<p>Error loading comments.</p>';
