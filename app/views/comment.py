@@ -16,9 +16,10 @@ class CommentView(APIView):
 
         # post 
         post_id = request.GET.get('post')
-        queryset = Comment.objects.all()
+        # queryset = Comment.objects.all()
         if post_id:
-            queryset = queryset.filter(post_id=post_id)
+            queryset = Comment.objects.filter(post_id=post_id)
+            # queryset = queryset.filter(post_id=post_id)
         result = paginator.paginate_queryset(queryset, request)
         serializer = CommentSerializer(result, many=True)
         return paginator.get_paginated_response(serializer.data)

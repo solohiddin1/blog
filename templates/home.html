@@ -6,7 +6,7 @@
 <body>
     <h1>GeeksforGeeks</h1>
     <script>
-        const socket = new WebSocket('ws://' + window.location.host + '/ws/localhost/posts');
+        const socket = new WebSocket('ws://' + window.location.host + '/ws/comments/2');
 
         socket.onmessage = function(event) {
             const data = JSON.parse(event.data);

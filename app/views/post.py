@@ -20,7 +20,6 @@ class PostView(APIView):
         author = request.user.id
         data = request.data.copy()
         data['author'] = author
-        # ensure tags exist (allow creating tags on the fly)
         tags = data.get('tag') or []
         if isinstance(tags, list):
             for t in tags:
