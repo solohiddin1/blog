@@ -31,6 +31,7 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
+    'jazzmin',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -41,6 +42,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'rest_framework',
     'channels',
+
 ]
 
 MIDDLEWARE = [
@@ -145,8 +147,39 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = 'static/'
+STATIC_ROOT = BASE_DIR / 'static'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+
+JAZZMIN_SETTINGS = {
+    # title of the window (Will default to current_admin_site.site_title if absent or None)
+    "site_title": "Blog",
+
+    # Title on the login screen (19 chars max) (defaults to current_admin_site.site_header if absent or None)
+    "site_header": "Blog site",
+
+    # Title on the brand (19 chars max) (defaults to current_admin_site.site_header if absent or None)
+    "site_brand": "Blog",
+    # "site_logo": "jazzmin/img/nonborlogo.png",
+    "order_with_respect_to": ["product", "business", "user"],
+
+    "user_avatar": "image",
+
+    # "language_chooser": True,
+    "show_ui_builder": True,
+
+    "custom_links": {
+        "product.Product": [
+            {
+                "name": "Checking Products",
+                "url": "admin:product_product_changelist",
+                "icon": "fas fa-box",
+                "permissions": ["product.view_product"],
+            }
+        ],
+    }
+}
